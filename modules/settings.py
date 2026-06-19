@@ -1,17 +1,22 @@
 import json
 import os
 
-SETTINGS_FILE = "settings.json"
-HOTKEY_FILE = "hotkeys.json"
-FAVORITES_FILE = "favorites.json"
-VOLUMES_FILE = "sound_volumes.json"
+APP_NAME = "BombaclatSoundboard"
+APP_DATA_FOLDER = os.path.join(os.getenv("APPDATA", os.getcwd()), APP_NAME)
+
+os.makedirs(APP_DATA_FOLDER, exist_ok=True)
+
+SETTINGS_FILE = os.path.join(APP_DATA_FOLDER, "settings.json")
+HOTKEY_FILE = os.path.join(APP_DATA_FOLDER, "hotkeys.json")
+FAVORITES_FILE = os.path.join(APP_DATA_FOLDER, "favorites.json")
+VOLUMES_FILE = os.path.join(APP_DATA_FOLDER, "sound_volumes.json")
 
 DEFAULT_SETTINGS = {
     "startup_volume": 80,
     "default_category": "memes",
     "auto_refresh": True,
     "output_device": "",
-    "window_geometry": "1050x800",
+    "window_geometry": "1100x760",
     "stop_hotkey": "f9"
 }
 
@@ -26,6 +31,8 @@ def load_json(path, default):
         return default.copy() if isinstance(default, dict) else default
 
 def save_json(path, data):
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+
     with open(path, "w", encoding="utf-8") as file:
         json.dump(data, file, indent=4)
 
@@ -56,3 +63,6 @@ def load_sound_volumes():
 
 def save_sound_volumes(volumes):
     save_json(VOLUMES_FILE, volumes)
+
+def get_app_data_folder():
+    return APP_DATA_FOLDER

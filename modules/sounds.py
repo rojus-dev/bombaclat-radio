@@ -8,11 +8,15 @@ from modules.settings import (
     save_hotkeys,
     save_favorites,
     load_sound_volumes,
-    save_sound_volumes
+    save_sound_volumes,
+    get_app_data_folder
 )
 
-SOUNDS_FOLDER = "sounds"
+SOUNDS_FOLDER = os.path.join(get_app_data_folder(), "sounds")
 SUPPORTED_FILES = (".mp3", ".wav", ".ogg")
+
+def ensure_sounds_folder():
+    os.makedirs(SOUNDS_FOLDER, exist_ok=True)
 
 def format_duration(seconds):
     seconds = int(seconds)
@@ -45,7 +49,7 @@ def get_sounds():
     sounds = []
     counter = 1
 
-    os.makedirs(SOUNDS_FOLDER, exist_ok=True)
+    ensure_sounds_folder()
 
     for root_dir, dirs, files in os.walk(SOUNDS_FOLDER):
         dirs.sort()
@@ -93,7 +97,10 @@ def update_references(old_id, new_id):
         save_sound_volumes(volumes)
 
 def import_sound_file(file_path, category):
-    target_folder = os.path.join(SOUNDS_FOLDER, category)
+    ensure_sounds_folder()
+
+    safe_category = category.strip() if category else "memes"
+    target_folder = os.path.join(SOUNDS_FOLDER, safe_category)
     os.makedirs(target_folder, exist_ok=True)
 
     target_path = unique_path(os.path.join(target_folder, os.path.basename(file_path)))
@@ -112,6 +119,8 @@ def rename_sound(sound, new_name):
     update_references(old_id, new_id)
 
 def move_sound(sound, new_category):
+    ensure_sounds_folder()
+
     target_folder = os.path.join(SOUNDS_FOLDER, new_category)
     os.makedirs(target_folder, exist_ok=True)
 
