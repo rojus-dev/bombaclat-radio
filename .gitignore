@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+sounds/
+# Virtual environments
+venv/
+.env/
+
+# PyInstaller
+build/
+dist/
+*.spec
+
+# IDE
+.vscode/
+.idea/
+
+# Windows
+Thumbs.db
+Desktop.ini
+
+# Soundboard data
+favorites.json
+hotkeys.json
+settings.json
+sound_volumes.json
+
+# Logs
+*.log
