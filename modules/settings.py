@@ -10,6 +10,7 @@ SETTINGS_FILE = os.path.join(APP_DATA_FOLDER, "settings.json")
 HOTKEY_FILE = os.path.join(APP_DATA_FOLDER, "hotkeys.json")
 FAVORITES_FILE = os.path.join(APP_DATA_FOLDER, "favorites.json")
 VOLUMES_FILE = os.path.join(APP_DATA_FOLDER, "sound_volumes.json")
+PLAY_COUNTS_FILE = os.path.join(APP_DATA_FOLDER, "play_counts.json")
 
 DEFAULT_SETTINGS = {
     "startup_volume": 80,
@@ -66,3 +67,18 @@ def save_sound_volumes(volumes):
 
 def get_app_data_folder():
     return APP_DATA_FOLDER
+
+def load_play_counts():
+    return load_json(PLAY_COUNTS_FILE, {})
+
+def save_play_counts(counts):
+    save_json(PLAY_COUNTS_FILE, counts)
+
+def increment_play_count(sound_file):
+    counts = load_play_counts()
+    counts[sound_file] = counts.get(sound_file, 0) + 1
+    save_play_counts(counts)
+
+def get_top_play_counts(limit=5):
+    counts = load_play_counts()
+    return sorted(counts.items(), key=lambda item: item[1], reverse=True)[:limit]

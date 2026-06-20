@@ -9,7 +9,9 @@ from modules.settings import (
     load_hotkeys,
     save_hotkeys,
     load_favorites,
-    save_favorites
+    save_favorites,
+    increment_play_count,
+    get_top_play_counts
 )
 
 from modules.sounds import (
@@ -24,6 +26,8 @@ from modules.sounds import (
 from modules.audio import AudioEngine
 from modules.hotkeys import HotkeyManager
 from tkinterdnd2 import DND_FILES
+from tkinter import messagebox
+from modules.updater import check_for_updates, open_release_page
 
 # ---- palette ---------------------------------------------------------
 # Neutral chrome (sidebar / panels / cards) + a small set of accent
@@ -103,6 +107,35 @@ class SoundboardApp:
             index = len(self.category_colors) % len(CATEGORY_RAMP)
             self.category_colors[category] = CATEGORY_RAMP[index]
         return self.category_colors[category]
+
+
+
+
+
+    def check_updates(self):
+        result = check_for_updates()
+
+        if "error" in result:
+            messagebox.showerror(
+                "Update Check",
+                f"Failed to check for updates:\n\n{result['error']}"
+            )
+            return
+
+        if result["update_available"]:
+            if messagebox.askyesno(
+                "Update Available",
+                f"Current: v{result['current']}\n"
+                f"Latest: v{result['latest']}\n\n"
+                f"Open download page?"
+            ):
+                open_release_page()
+        else:
+            messagebox.showinfo(
+                "Update Check",
+                f"You are up to date.\n\nVersion: v{result['current']}"
+            )
+
 
     # ---- layout ----------------------------------------------------------
 
@@ -378,6 +411,19 @@ class SoundboardApp:
         self.now_playing_frame = tk.Frame(panel, bg=PANEL)
         self.now_playing_frame.pack(fill="x", padx=16)
 
+        tk.Frame(panel, bg=BORDER, height=1).pack(fill="x", padx=16, pady=16)
+
+        tk.Label(
+            panel,
+            text="TOP SOUNDS",
+            font=("Segoe UI", 10, "bold"),
+            bg=PANEL,
+            fg=TEXT_MUTED
+        ).pack(anchor="w", padx=16, pady=(0, 8))
+
+        self.top_sounds_frame = tk.Frame(panel, bg=PANEL)
+        self.top_sounds_frame.pack(fill="x", padx=16)
+
         self.now_playing_empty = tk.Label(
             self.now_playing_frame,
             text="Nothing playing",
@@ -452,6 +498,8 @@ class SoundboardApp:
             )
             self.status_label.config(text=f"Playing: {sound['name']}", fg=GREEN)
             self.flash_card(sound["file"])
+            increment_play_count(sound["file"])
+            self.update_top_sounds()
         except Exception as e:
             self.status_label.config(text=f"Audio error: {e}", fg=RED)
 
@@ -766,6 +814,42 @@ class SoundboardApp:
             for sound in filtered:
                 self.create_sound_card(sound, sound["file"] in favorites)
 
+    def update_top_sounds(self):
+        if not hasattr(self, "top_sounds_frame"):
+            return
+
+        for widget in self.top_sounds_frame.winfo_children():
+            widget.destroy()
+
+        sounds = get_sounds()
+        sound_names = {sound["file"]: sound["name"] for sound in sounds}
+
+        top = get_top_play_counts(5)
+
+        if not top:
+            tk.Label(
+                self.top_sounds_frame,
+                text="No plays yet",
+                font=("Segoe UI", 10),
+                bg=PANEL,
+                fg=TEXT_DIM,
+                anchor="w"
+            ).pack(fill="x", pady=3)
+            return
+
+        for index, (file_id, count) in enumerate(top, start=1):
+            name = sound_names.get(file_id, file_id)
+
+            tk.Label(
+                self.top_sounds_frame,
+                text=f"#{index} {name} — {count}",
+                font=("Segoe UI", 10),
+                bg=PANEL,
+                fg=TEXT,
+                anchor="w",
+                wraplength=185
+            ).pack(fill="x", pady=3)
+
     def update_stats(self):
         sounds = get_sounds()
         favorites = load_favorites()
@@ -792,6 +876,7 @@ class SoundboardApp:
         )
 
         self.update_stats()
+        self.update_top_sounds()
 
         if conflicts:
             self.status_label.config(text=f"Hotkey conflict: {', '.join(conflicts)}", fg=RED)
@@ -959,6 +1044,18 @@ class SoundboardApp:
 
         button_row = tk.Frame(content, bg=CARD)
         button_row.pack(fill="x")
+        tk.Button(
+            button_row,
+            text="Check Updates",
+            font=("Segoe UI", 10, "bold"),
+            bg=BLUE,
+            fg="#11111b",
+            relief="flat",
+            padx=18,
+            pady=9,
+            command=self.check_updates
+        ).pack(side="left", padx=(10, 0))
+
         tk.Button(button_row, text="Save Settings", font=("Segoe UI", 10, "bold"), bg=GREEN, fg="#11111b", relief="flat", padx=18, pady=9, command=self.save_settings_page).pack(side="left")
         self.settings_status_label = tk.Label(button_row, text="", bg=CARD, fg=GREEN, font=("Segoe UI", 10))
         self.settings_status_label.pack(side="left", padx=12)
